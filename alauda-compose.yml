@@ -1,0 +1,57 @@
+networks: {}
+orch:
+  failure_action: pause
+  mode: strict
+  timeout: 150
+services:
+  mysql:
+    alauda_lb: ALB
+    environment:
+    - MYSQL_USER=java
+    - MYSQL_PASS=java
+    - REPLICATION_MASTER=true
+    - ON_CREATE_DB=javatest
+    - REPLICATION_USER=replica
+    - REPLICATION_PASS=replica
+    - STARTUP_SQL=/initsql/init.sql
+    image: index.alauda.cn/demo100/tutum-mysql:latest
+    volumes:
+    - mysql:/initsql
+    labels:
+    - constraint:node==ip:10.0.0.9
+    network_mode: flannel
+    number: 1
+    size: M
+    ports:
+    - '3306'
+  mysql-slave:
+    alauda_lb: ALB
+    environment:
+    - MYSQL_USER=java
+    - MYSQL_PASS=java
+    - REPLICATION_SLAVE=true
+    - ON_CREATE_DB=javatest
+    - MYSQL_ENV_REPLICATION_USER=replica
+    - MYSQL_ENV_REPLICATION_PASS=replica
+    image: index.alauda.cn/demo100/tutum-mysql:latest
+    labels:
+    - constraint:node==ip:10.0.0.11
+    links:
+    - mysql:mysql
+    network_mode: flannel
+    number: 1
+    size: M
+    ports:
+    - '3306'
+  tomcat:
+    alauda_lb: ALB
+    image: 10.0.0.4:28086/alauda/app2_tomcat_app
+    links:
+    - mysql:mysql
+    network_mode: flannel
+    number: 1
+    size: M
+    ports:
+    - '8080'
+version: '2.0'
+volumes: {}
